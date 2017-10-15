@@ -1,0 +1,1 @@
+{"3daa6bed-325e-4460-bbba-4dc66d4ad65e":{"resourceKinds":[{"resourceKindKey":"VirtualMachine","adapterKindKey":"VMWARE"}],"name":"C GB remaining","formula":"(${this, metric=guestfilesystem:C:\\\\|capacity})-(${this, metric=guestfilesystem:C:\\\\|usage})","description":""}}
