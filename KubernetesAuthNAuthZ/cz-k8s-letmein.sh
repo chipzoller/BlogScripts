@@ -1,3 +1,4 @@
+#!/bin/bash
 export USERNAME=<insert_username_here>
 export NAMESPACE=<insert_namespace_here>
 export CA=<insert_path_and_filename_to_K8s_CA_here>
