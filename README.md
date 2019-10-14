@@ -1,2 +1,2 @@
 # BlogScripts
-Scripts referenced in my blogs.
+These are sundry files/scripts I reference in my various blog posts.
