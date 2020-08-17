@@ -7,6 +7,9 @@
 
 name: CI
 on:
+  workflow_dispatch:
+    branches:
+    - master
   push:
     branches: 
     - master
@@ -22,7 +25,7 @@ env:
 jobs:
   build:
   # In this phase, the code is pulled from master and the site rendered in Hugo. The built site is stored as an artifact for other stages.
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     steps:
     # Check out master branch from the repo.
     - name: Checkout master branch
@@ -33,7 +36,7 @@ jobs:
         ref: master
     # Ensure the site succeeds Hugo builds. If it fails for some reason, the pipeline will halt.
     - name: Build site with Hugo
-      uses: lowply/build-hugo@v0.69.0
+      uses: lowply/build-hugo@v0.74.1
     # If build succeeds, store the public/ dir as an artifact to be used in subsequent phases.
     - name: Upload output public dir as artifact
       uses: actions/upload-artifact@v1
@@ -42,7 +45,7 @@ jobs:
         path: public/
   publish:
   # In the publish phase, the site is pushed up to a different branch which only stores the public/ folder ("site" branch) and is also delta synchronized to the S3 bucket. CloudFront invalidation happens last.
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     needs: build
     steps:
     # Check out the site branch this time since we have to ultimately commit those changes there.
@@ -88,18 +91,9 @@ jobs:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ${{ env.AWS-DEFAULT-REGION }}
-    # Use s5cmd to perform only a delta sync to the destination S3 bucket. This minimizes transfer traffic since it only uploads changed files.
-    - name: Delta sync site to S3 bucket
+    - name: Delta sync site to S3 with aws cli
       if: steps.nothing_committed.conclusion == 'skipped'
-      run: |
-        curl -sLO https://github.com/peak/s5cmd/releases/download/v1.0.0/s5cmd_1.0.0_Linux-64bit.tar.gz
-        tar -xzf s5cmd_1.0.0_Linux-64bit.tar.gz
-        chmod +x s5cmd
-        sudo mv s5cmd /usr/local/bin/
-        echo "****Showing working dir and listing files.****"
-        pwd && ls -lah
-        echo "****Running delta sync against S3.****"
-        s5cmd cp -s public/ s3://${{ secrets.AWS_S3_BUCKET_NAME }}
+      run: aws s3 sync --size-only --delete public/ s3://${{ secrets.AWS_S3_BUCKET_NAME }}
     # Use the aws cli tool to perform a glob invalidation of the entire site against CloudFront.
     - name: Invalidate cache on CloudFront
       if: steps.nothing_committed.conclusion == 'skipped'
